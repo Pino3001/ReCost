@@ -10,7 +10,7 @@ interface TipoReceta {
 }
 interface DropdownProps {
     placeholder: string;
-    onSelect: (item: string) => void;
+    onSelect: (item: number) => void;
 }
 
 export const ImputTipoReceta: React.FC<DropdownProps> = ({ placeholder, onSelect }) => {
@@ -34,7 +34,7 @@ export const ImputTipoReceta: React.FC<DropdownProps> = ({ placeholder, onSelect
 
     const handleSelect = (item: TipoReceta) => {
         setSelectedValue(item.tipo);
-        onSelect(item.id.toString());
+        onSelect(item.id);
         setModalVisible(false);
     };
     const handleClose = () => {

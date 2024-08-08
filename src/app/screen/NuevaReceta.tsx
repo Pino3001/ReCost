@@ -3,77 +3,34 @@ import { StyleSheet, TextInput, SafeAreaView, Button, Image, TouchableOpacity, S
 import { FontAwesome5 } from "@expo/vector-icons";
 import Colors from "../styles/color";
 import * as ImagePicker from 'expo-image-picker';
-import * as ImageManipulator from 'expo-image-manipulator'; // Importa ImageManipulator
+import * as ImageManipulator from 'expo-image-manipulator'; 
+import { Ingrediente, Receta, createDefaultReceta } from "../types";
 import globalStyles from "../styles/styles";
 import IngredientModal from "../modal/modalNewIng";
 import { ImputTipoReceta } from "../componentes/imputTipoReceta";
 import { operReceta } from "../../databse/operRecetaDB";
-import { operRelaciones } from "../../databse/operRelacionesDB";
 import { operIngrediente } from "../../databse/operIngrediente";
 
-type IngredienteDatabase = {
-    nombre: string,
-    cantidad: number,
-    unidadMedidaId: number,
-    tipoUnidad: string,
-    productoId: number,
-};
+
 
 export default function NuevaReceta() {
-    const [nombreReceta, setNombreReceta] = useState('');
-    const [imagen, setImagen] = useState<Uint8Array | null>(null);
-    const [procedimiento, setProcedimiento] = useState('');
-    const [recetScreenshot, setRecetScreenshot] = useState<Uint8Array | null>(null);
-    const [tipoRecetaId, setTipoRecetaId] = useState('');
-    const [ingredientes, setIngredientes] = useState<IngredienteDatabase[]>([]);
-    const [recetaSimple, setRecetaSimple] = useState(0);
-    const [listIngredientes, setListIngredientes] = useState<number[]>([]);
-    const [activeScreen, setActiveScreen] = useState('receta');
+    const [receta, setReceta] = useState<Receta | null>(createDefaultReceta());
+    const [listIngredientes, setListIngredientes] = useState<Ingrediente[]>([]);
     const [modalVisible, setModalVisible] = useState(false);
 
     const { createReceta } = operReceta();
-    const { createRelacionRI } = operRelaciones();
     const { createIngrediente } = operIngrediente();
 
     const handleGuardar = async () => {
         try {
-            await Promise.all(
-                ingredientes.map(async (ingrediente) => {
-                    const IngredienteData = {
-                        nombre: ingrediente.nombre,
-                        cantidad: ingrediente.cantidad,
-                        unidadMedidaId: ingrediente.unidadMedidaId,
-                        productoId: ingrediente.productoId,
-                    };
-                    const ingredienteResult = await createIngrediente(IngredienteData);
-                    setListIngredientes(prevIngredientes => [...prevIngredientes, ingredienteResult.idFilaIncertada]);
-                })
-            );
+            if (receta != null) {
+                const recetaResult = await createReceta(receta);
+                setReceta(createDefaultReceta());
+                Alert.alert('Listo', 'Receta guardada exitosamente');
+                console.log('se guardaron los ingredientes', recetaResult.ingredientes);
 
-            const RecetaDatabase = {
-                nombre: nombreReceta,
-                imagen: imagen,
-                procedimiento: procedimiento,
-                screenshot: recetScreenshot,
-                tipoRecetaId: parseInt(tipoRecetaId, 10),
-                recetaSimple: recetaSimple,
-            };
+            }
 
-            const recetaResult = await createReceta(RecetaDatabase);
-
-            await Promise.all(
-                listIngredientes.map(async (ingredienteId) => {
-                    await createRelacionRI({ recetaId: recetaResult.idFilaIncertada, ingredienteId });
-                })
-            );
-
-            setNombreReceta('');
-            setImagen(null);
-            setProcedimiento('');
-            setRecetScreenshot(null);
-            setTipoRecetaId('');
-            setIngredientes([]);
-            Alert.alert('Listo', 'Receta guardada exitosamente');
         } catch (error) {
             console.error('Error al insertar receta:', error);
             Alert.alert('Error', 'No se pudo guardar la receta');
@@ -81,29 +38,36 @@ export default function NuevaReceta() {
     };
 
     const guardarRecetaComun = () => {
-        if (!nombreReceta || !procedimiento || !ingredientes) {
+        if (!receta?.nombre || !receta.procedimiento || !receta.ingredientes) {
             Alert.alert('Error', 'Por favor, rellena todos los campos');
             return;
         }
-        setRecetaSimple(2);
         handleGuardar();
     };
 
     const guardarRecetaSimple = () => {
-        console.log('hay', tipoRecetaId);
-        if (!nombreReceta || !recetScreenshot || !tipoRecetaId) {
+        if (!receta?.nombre || !receta.screenshot || !receta.tipoRecetaId) {
             Alert.alert('Error', 'Por favor, rellena todos los campos');
             return;
         }
-        setRecetaSimple(1);
         handleGuardar();
     };
 
-    const handleAddIngredient = (ingredient: { nombre: string; cantidad: number; unidadMedidaId: number; tipoUnidad: string; productoId: number; }) => {
-        setIngredientes((prev) => [...prev, ingredient]);
+    const handleAddIngredient = (ingredient: Ingrediente) => {
+        setReceta((prevReceta) => {
+            if (!prevReceta) return null;
+            return { ...prevReceta, ingredientes: [...prevReceta.ingredientes, ingredient] };
+        })
     };
 
-    const pickImage = async (setRecetScreenshot: React.Dispatch<React.SetStateAction<Uint8Array | null>>) => {
+    const handleTipReceta = (item: number) => {
+        setReceta((prevReceta) => {
+            if (!prevReceta) return null;
+            return { ...prevReceta, tipoRecetaId: item };
+        });
+    };
+
+    const pickImage = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
             alert('Lo siento, necesitamos permisos para acceder a la galería de imágenes.');
@@ -121,8 +85,8 @@ export default function NuevaReceta() {
             try {
                 const manipulatedImage = await ImageManipulator.manipulateAsync(
                     uri,
-                    [{ resize: { width: 100, height: 100 } }],
-                    { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+                    [],
+                    { compress: 1, format: ImageManipulator.SaveFormat.PNG }
                 );
 
                 // Convierte la imagen redimensionada a Uint8Array
@@ -141,7 +105,11 @@ export default function NuevaReceta() {
                 });
                 reader.readAsArrayBuffer(blob);
                 const uint8Array = await promise;
-                setRecetScreenshot(uint8Array);
+
+                setReceta((prevReceta) => {
+                    if (!prevReceta) return null;
+                    return { ...prevReceta, screenshot: uint8Array };
+                });
             } catch (error) {
                 console.error('Error al redimensionar la imagen:', error);
             }
@@ -158,44 +126,57 @@ export default function NuevaReceta() {
         return `data:image/jpeg;base64,${btoa(binary)}`;
     };
 
-
-
-    const handleTipReceta = (item: string) => {
-        console.log('Selected:', item);
-        setTipoRecetaId(item);
-    };
-
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView keyboardShouldPersistTaps="handled">
                 <View style={styles.buttonContainer}>
                     <TouchableOpacity
-                        style={[styles.recetaTipoboton, activeScreen === 'receta' && styles.activeButton]}
-                        onPress={() => setActiveScreen('receta')}
+                        style={[styles.recetaTipoboton, receta?.recetaSimple === 1 && styles.activeButton]}
+                        onPress={() => setReceta({
+                            id: -1, nombre: "", imagen: null,
+                            procedimiento: "",
+                            tipoRecetaId: 1,
+                            screenshot: null,
+                            recetaSimple: 0,
+                            ingredientes: []
+                        })}
                     >
-                        <Text style={[styles.botonText, activeScreen === 'receta' && styles.botonTextActivo]}>Receta</Text>
+                        <Text style={[styles.botonText, receta?.recetaSimple === 1 && styles.botonTextActivo]}>Receta</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                        style={[styles.recetaTipoboton, activeScreen === 'screenshot' && styles.activeButton]}
-                        onPress={() => setActiveScreen('screenshot')}
+                        style={[styles.recetaTipoboton, receta?.recetaSimple === 0 && styles.activeButton]}
+                        onPress={() => setReceta({
+                            id: -1, nombre: "", imagen: null,
+                            procedimiento: "",
+                            tipoRecetaId: 1,
+                            screenshot: null,
+                            recetaSimple: 1,
+                            ingredientes: []
+                        })}
                     >
-                        <Text style={[styles.botonText, activeScreen === 'screenshot' && styles.botonTextActivo]}>Screenshot</Text>
+                        <Text style={[styles.botonText, receta?.recetaSimple === 0 && styles.botonTextActivo]}>Screenshot</Text>
                     </TouchableOpacity>
                 </View>
-                {activeScreen === 'receta' &&
+                {receta?.recetaSimple === 0 &&
                     <SafeAreaView style={styles.fullScreenContainer}>
                         <Text style={styles.tituloText}>Receta Comun</Text>
                         <TextInput
                             style={styles.input}
-                            onChangeText={setNombreReceta}
-                            value={nombreReceta}
+                            onChangeText={(e) => setReceta((prevReceta) => {
+                                if (!prevReceta) return null;
+                                return { ...prevReceta, nombre: e }
+                            })}
+                            value={receta.nombre}
                             placeholder="Nombre de la receta"
                             placeholderTextColor={Colors.text}
                         />
                         <TextInput
                             style={styles.inputProcedimiento}
-                            onChangeText={setProcedimiento}
-                            value={procedimiento}
+                            onChangeText={(e) => setReceta((prevReceta) => {
+                                if (!prevReceta) return null;
+                                return { ...prevReceta, procedimiento: e };
+                            })}
+                            value={receta.procedimiento}
                             placeholder="Procedimiento:"
                             placeholderTextColor={Colors.text}
                             multiline={true}
@@ -206,8 +187,8 @@ export default function NuevaReceta() {
                             color={Colors.primary}
                         />
                         <View style={styles.listIng}>
-                            {ingredientes.map((ingrediente, index) => (
-                                <Text key={index}>{[ingrediente.nombre, '- ', ingrediente.cantidad, ' ', ingrediente.tipoUnidad]}</Text>
+                            {receta.ingredientes.map((ingrediente, index) => (
+                                <Text key={index}>{[ingrediente.nombre, '- ', ingrediente.cantidad, ' ', ingrediente.unidadMedidaId]}</Text>
                             ))}
                         </View>
                         <ImputTipoReceta
@@ -220,20 +201,24 @@ export default function NuevaReceta() {
                             color={Colors.primary}
                         />
                     </SafeAreaView>}
-                {activeScreen === 'screenshot' &&
+                {receta?.recetaSimple === 1 &&
                     <SafeAreaView style={styles.fullScreenContainer}>
                         <Text style={styles.tituloText}>Receta Rapida</Text>
                         <TextInput
                             style={styles.input}
-                            onChangeText={setNombreReceta}
-                            value={nombreReceta}
+                            onChangeText={(e) => setReceta((prevReceta) => {
+                                if (!prevReceta) return null;
+                                return { ...prevReceta, nombre: e }
+                            })}
+                            value={receta.nombre}
                             placeholder="Nombre de la receta"
                             placeholderTextColor={Colors.text}
                         />
                         <Text style={[globalStyles.textDescrip, styles.textdesc]}>Screenshot</Text>
-                        <TouchableOpacity onPress={() => pickImage(setRecetScreenshot)} style={styles.imageAdd}>
-                            {recetScreenshot ? (
-                                <Image source={{ uri: screenIcono(recetScreenshot) }} style={styles.imageScreen} resizeMode="cover" />
+                        <TouchableOpacity
+                            onPress={pickImage} style={styles.imageAdd}>
+                            {receta.screenshot ? (
+                                <Image source={{ uri: screenIcono(receta.screenshot) }} style={styles.imageScreen} resizeMode="cover" />
                             ) : (
                                 <FontAwesome5 name="image" size={60} color={Colors.primary} />
                             )}

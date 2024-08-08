@@ -1,7 +1,10 @@
 import React, { useState } from "react";
-import { StyleSheet, TextInput, SafeAreaView, Button, ScrollView, Alert } from "react-native";
+import { StyleSheet, TextInput, SafeAreaView, Text, TouchableOpacity, Alert } from "react-native";
+import globalStyles from "../styles/styles";
+import Colors from "../styles/color";
 import { operProductos } from "../../databse/operProductoDB";
 import { operUnidadMedida } from "../../databse/operUnidadMedDB";
+import { TextImputUnidadMedida } from "../componentes/imputUmedida";
 
 export default function NuevoProducto() {
   const [nombre, setNombre] = useState('');
@@ -50,49 +53,51 @@ export default function NuevoProducto() {
     }
   };
 
+  const handleUmedida = (item: string) => {
+    setUnidadMedida(item);
+};
+
   return (
-    <SafeAreaView>
-      <ScrollView>
-        <TextInput 
-          style={styles.input} 
-          onChangeText={setNombre} 
-          value={nombre} 
-          placeholder="Nombre del producto"
-        />
-        <TextInput
-          style={styles.input}
-          onChangeText={setPrecio}
-          value={precio}
-          placeholder="Precio"
-          keyboardType="numeric"
-        />
-        <TextInput
-          style={styles.input}
-          onChangeText={setCantidad}
-          value={cantidad}
-          placeholder="Cantidad"
-          keyboardType="numeric"
-        />
-        <TextInput
-          style={styles.input}
-          onChangeText={setUnidadMedida}
-          value={unidadMedida}
-          placeholder="Unidad de Medida"
-        />
-        <TextInput
-          style={styles.input}
-          onChangeText={setProveedor}
-          value={proveedor}
-          placeholder="Proveedor"
-        />
-        <Button
-          title="Guardar"
-          color="#841584"
-          onPress={handleGuardar}
-          accessibilityLabel="Guardar producto"
-        />
-      </ScrollView>
-    </SafeAreaView>
+    <SafeAreaView style={styles.viewProducto}>
+                          <TextInput
+                        style={globalStyles.inputModal}
+                        onChangeText={setNombre}
+                        value={nombre}
+                        placeholder="Nombre del Producto"
+                    />
+                          <SafeAreaView style={globalStyles.row}>
+                        <TextInput
+                            style={[globalStyles.inputModal, globalStyles.halfWidth]}
+                            onChangeText={setCantidad}
+                            value={cantidad}
+                            placeholder="Cantidad"
+                            keyboardType="numeric"
+                        />
+                        <TextImputUnidadMedida
+                            placeholder="Un. Medida"
+                            onSelect={handleUmedida}
+                        />
+                    </SafeAreaView>
+      <TextInput
+                        style={[globalStyles.inputModal, globalStyles.halfWidth]}
+                        onChangeText={setPrecio}
+                        value={precio}
+                        placeholder="Costo $"
+                        keyboardType="numeric"
+                    />
+                    <TextInput
+                        style={globalStyles.inputModal}
+                        onChangeText={setProveedor}
+                        value={proveedor}
+                        placeholder="Proveedor"
+                    />
+        <TouchableOpacity
+          style={styles.botonGuardar}
+                  onPress={handleGuardar}
+                  >
+          <Text style={styles.text}>Guardar</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
   );
 }
 
@@ -103,10 +108,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 10,
   },
-  container: {
+  viewProducto: {
+    marginTop: 30,
     flex: 1,
     alignItems: "center",
-    justifyContent: "center",
+    alignSelf: 'center',
+    width: '80%',
   },
   title: {
     fontSize: 20,
@@ -117,21 +124,19 @@ const styles = StyleSheet.create({
     height: 1,
     width: "80%",
   },
-  button: {
+  botonGuardar: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 120,
-    paddingHorizontal: 30,
+    width: 180,
+    height: 40,
     margin: 20,
-    borderRadius: 15,
-    elevation: 3,
-    backgroundColor: "#c56d",
+    borderRadius: 5,
+    backgroundColor: Colors.primary,
   },
   text: {
     fontSize: 20,
+    fontFamily: "Sanches-Regular",
     lineHeight: 21,
-    fontWeight: "bold",
-    letterSpacing: 0.25,
     color: "black",
   },
 });

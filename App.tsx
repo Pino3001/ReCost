@@ -1,3 +1,4 @@
+
 import React, {useState, useEffect} from 'react';
 import { SQLiteProvider } from 'expo-sqlite';
 import { SafeAreaView, StyleSheet } from 'react-native';
@@ -8,8 +9,8 @@ import * as Font from 'expo-font';
 
 const loadFonts = () => {
   return Font.loadAsync({
-      'IndieFlower-Regular': require('/home/alexis/Documentos/ReCost.app/assets/fonts/IndieFlower-Regular.ttf'),
-      'Sanches-Regular': require('/home/alexis/Documentos/ReCost.app/assets/fonts/Sanchez-Regular.ttf'),
+      'IndieFlower-Regular': require('./assets/fonts/IndieFlower-Regular.ttf'),
+      'Sanches-Regular': require('./assets/fonts/Sanchez-Regular.ttf'),
   });
 };
 

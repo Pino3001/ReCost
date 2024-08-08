@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Modal, StyleSheet, Text, TouchableOpacity, View, TextInput, Button, Alert } from "react-native";
+import { Product, createDefaultProducto } from "../types";
 import { TextImputUnidadMedida } from "../componentes/imputUmedida";
 import { FontAwesome5 } from "@expo/vector-icons";
 import globalStyles from "../styles/styles";
@@ -9,42 +10,46 @@ import { operProductos } from "../../databse/operProductoDB";
 interface ProductoModalProps {
     visible: boolean;
     onClose: () => void;
-    onSave: (id: number) => void;
+    onSave: (data: Product, tipoMed: string) => void;
     nombreProd: string;
 }
 
 export default function ProductoModal({ visible, onClose, onSave, nombreProd }: ProductoModalProps) {
-    const [cantidadProducto, setCantidadProducto] = useState('');
-    const [costoProducto, setCostoProducto] = useState('');
-    const [unidMedida, setUnidadMedida] = useState('');
-    const [proveedor, setProveedor] = useState('');
+    const [producto, setProducto] = useState<Product>(createDefaultProducto());
+    const [tipoMed, setTipoMed] = useState('');
 
     const { createProducto } = operProductos();
 
+    useEffect(() => {
+        setProducto((prevProducto) => ({
+            ...prevProducto,
+            nombre: nombreProd
+        }));
+    }, [nombreProd]);
+
     const handleSave = async () => {
-        if (!cantidadProducto || !unidMedida || !costoProducto) {
+        console.log('falta: ', producto.nombre, producto.unidadMedidaID,producto.precio, producto.cantidadXcompra)
+        if (!producto.cantidadXcompra || !producto.unidadMedidaID || !producto.precio || !producto.nombre) {
             Alert.alert('Error', 'Por favor, rellena todos los campos');
             return;
         }
         try {
-            const ProductDatabase = {
-                nombre: nombreProd,
-                precio: parseFloat(costoProducto),
-                cantidadXcompra: parseFloat(cantidadProducto),
-                unidadMedida: parseInt(unidMedida, 10),
-                proveedor: proveedor
-            }
-            const productoResult = await createProducto(ProductDatabase);
-            onSave(productoResult.idFilaIncertada);
+            await createProducto(producto);
+            onSave(producto, tipoMed);
             onClose();
         } catch (error) {
             console.error('Error al insertar producto:', error);
             Alert.alert('Error', 'No se pudo guardar el producto');
         }
     };
-    const handleUmedida = (item: string) => {
-        setUnidadMedida(item);
+
+    const handleUmedida = (item: number, item2: string) => {
+        setProducto((prevProduct) => {
+            return { ...prevProduct, unidadMedidaID: item }
+        });
+        setTipoMed(item2);
     };
+
     return (
         <Modal
             animationType="fade"
@@ -61,8 +66,14 @@ export default function ProductoModal({ visible, onClose, onSave, nombreProd }: 
                     <View style={globalStyles.row}>
                         <TextInput
                             style={[globalStyles.inputModal, globalStyles.halfWidth]}
-                            onChangeText={setCantidadProducto}
-                            value={cantidadProducto}
+                            onChangeText={(e) => {
+                                const numericValue = parseInt(e, 10);
+                                setProducto((prevProduct) => ({
+                                    ...prevProduct,
+                                    cantidadXcompra: isNaN(numericValue) ? 0 : numericValue,
+                                }));
+                            }}
+                            value={producto.cantidadXcompra === 0 ? '' : producto.cantidadXcompra.toString()}
                             placeholder="Cantidad"
                             keyboardType="numeric"
                         />
@@ -73,15 +84,26 @@ export default function ProductoModal({ visible, onClose, onSave, nombreProd }: 
                     </View>
                     <TextInput
                         style={[globalStyles.inputModal, globalStyles.halfWidth]}
-                        onChangeText={setCostoProducto}
-                        value={costoProducto}
+                        onChangeText={(e) => {
+                            const numericValue = parseInt(e, 10);
+                            setProducto((prevProducto) => ({
+                                ...prevProducto,
+                                precio: isNaN(numericValue) ? 0 : numericValue,
+                            }))
+                        }}
+                        value={producto.precio === 0 ? '' : producto.precio.toString()}
                         placeholder="Costo $"
                         keyboardType="numeric"
                     />
                     <TextInput
                         style={globalStyles.inputModal}
-                        onChangeText={setProveedor}
-                        value={proveedor}
+                        onChangeText={(e) => {
+                            setProducto((prevProducto) => ({
+                                ...prevProducto,
+                                proveedor: e,
+                            }))
+                        }}
+                        value={producto.proveedor}
                         placeholder="Proveedor"
                     />
                     <Button

@@ -4,47 +4,33 @@ import ProductoModal from "./modalNewProduct";
 import { FontAwesome5 } from "@expo/vector-icons";
 import globalStyles from "../styles/styles";
 import Colors from "../styles/color";
+import { Ingrediente, createDefaultIngrediente, Product, createDefaultProducto } from "../types";
 import { operProductos } from "../../databse/operProductoDB";
 import { TextImputUnidadMedida } from "../componentes/imputUmedida";
 
-type IngredienteDatabase = {
-  nombre: string,
-  cantidad: number,
-  unidadMedidaId: number,
-  tipoUnidad: string,
-  productoId: number,
-};
 
 interface IngredientModalProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (ing: IngredienteDatabase) => void;
+  onSave: (ing: Ingrediente) => void;
 }
-
-interface Product {
-  id: number;
-  nombre: string;
-}
-
 export default function IngredientModal({ visible, onClose, onSave }: IngredientModalProps) {
-  const [nombreIngrediente, setNombreIngrediente] = useState('');
-  const [cantidadIng, setCantidadIng] = useState('');
-  const [unidadMedida, setUnidadMedida] = useState('');
-  const [tipoUnidadMedida, setTipoUnidadMedida] = useState('');
-  const [productoID, setProductoID] = useState('');
+  const [ing, setIng] = useState<Ingrediente>(createDefaultIngrediente());
+
   const [text, setText] = useState<string>('');
+  const [tipoMed, setTipoMed] = useState('');
   const [suggestions, setSuggestions] = useState<Product[]>([]);
   const [showAddButton, setShowAddButton] = useState<boolean>(false);
-  const [productos, setProductos] = useState<Product[]>([]);
+  const [productosLista, setProductosLista] = useState<Product[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
-  const { listProdID } = operProductos();
+  const { showProductos } = operProductos();
 
   useEffect(() => {
     //obtiene la lista de productos
     const fetchProductos = async () => {
       try {
-        const result = await listProdID();
-        setProductos(result);
+        const result = await showProductos();
+        setProductosLista(result);
       } catch (error) {
         console.error('Error al obtener productos:', error);
       }
@@ -59,12 +45,11 @@ export default function IngredientModal({ visible, onClose, onSave }: Ingredient
       setShowAddButton(false);
       return;
     }
-    const filtered = productos.filter(producto =>
+    const filtered = productosLista.filter(producto =>
       producto.nombre.toLowerCase().includes(query.toLowerCase())
     );
     //Compruebo que el balor sea exacto, si no lo es muestra el boton de agregar
     const exactMatch = filtered.some(producto => producto.nombre.toLowerCase() === query.toLowerCase());
-
     setSuggestions(filtered);
     setShowAddButton(!exactMatch && query.length > 0);
   };
@@ -73,12 +58,17 @@ export default function IngredientModal({ visible, onClose, onSave }: Ingredient
     // hubo un cambio en el imput
     setText(input);
     filterSuggestions(input);
+    setIng((prevIng) => {
+      return { ...prevIng, nombre: input }
+    })
   };
 
   const handleSelect = (item: string) => {
     //selecciono un item de la lista
     setText(item);
-    setNombreIngrediente(item);
+    setIng((prevIng) => {
+      return { ...prevIng, nombre: item }
+    })
     setSuggestions([]);
     setShowAddButton(false);
   };
@@ -90,36 +80,44 @@ export default function IngredientModal({ visible, onClose, onSave }: Ingredient
     setShowAddButton(false);
   };
 
-  const agregarProducto = (id: number) => {
-    setProductoID(id.toString());
+  const agregarProducto = (data: Product ) => {
     handleSelect(text);
+    setTipoMed(data.nombre);
+    setIng({
+      ...ing,
+      productoId: data.id,
+    })
   };
 
-  const handleUmedida = (item: string, item2: string) => {
-    console.log('Selected:', item2);
-    setUnidadMedida(item);
-    setTipoUnidadMedida(item2);
+
+  const handleUmedida = (item: number, item2: string) => {
+    setIng((prevIng) => ({
+      ...prevIng,
+      unidadMedidaId: item,
+    }));
+
   };
+
+  const limpiarEstados = () => {
+    setIng(createDefaultIngrediente());
+    setText('');
+    setShowAddButton(false);
+  };
+
+  const cerrarModal = () => {
+    limpiarEstados();
+    onClose();
+  };
+
 
   const handleSave = async () => {
-    setNombreIngrediente(text);
-    if (!nombreIngrediente || !cantidadIng || !unidadMedida) {
+    if (!ing?.nombre || !ing.cantidad || !ing.unidadMedidaId) {
       Alert.alert('Error', 'Por favor, rellena todos los campos');
       return;
     }
     try {
-      const IngredienteDatabase = {
-        nombre: text,
-        cantidad: parseFloat(cantidadIng),
-        unidadMedidaId: parseInt(unidadMedida, 10),
-        tipoUnidad: tipoUnidadMedida,
-        productoId: parseInt(productoID, 10),
-      };
-      onSave(IngredienteDatabase);
-      setNombreIngrediente('');
-      setCantidadIng('');
-      setUnidadMedida('');
-      setProductoID('');
+      onSave(ing);
+      limpiarEstados();
       onClose();
     } catch (error) {
       console.error('Error al insertar ingrediente:', error);
@@ -147,14 +145,14 @@ export default function IngredientModal({ visible, onClose, onSave }: Ingredient
       onRequestClose={onClose}>
       <View style={globalStyles.centeredView}>
         <View style={globalStyles.modalView}>
-          <TouchableOpacity onPress={onClose} style={styles.botonClose}>
+          <TouchableOpacity onPress={cerrarModal} style={styles.botonClose}>
             <FontAwesome5 name="times" size={24} color={Colors.primary} />
           </TouchableOpacity>
           <Text style={globalStyles.modalText}>Agregar Ingrediente</Text>
           <TextInput
             style={globalStyles.inputModal}
             onChangeText={handleChange}
-            value={text}
+            value={ing.nombre}
             placeholder="Nombre del Ingrediente"
           />
           <FlatList
@@ -167,11 +165,18 @@ export default function IngredientModal({ visible, onClose, onSave }: Ingredient
           <View style={globalStyles.row}>
             <TextInput
               style={[globalStyles.inputModal, globalStyles.halfWidth]}
-              onChangeText={setCantidadIng}
-              value={cantidadIng}
-              placeholder="Cantidad"
               keyboardType="numeric"
+              onChangeText={(e) => {
+                const numericValue = parseInt(e, 10);
+                setIng((prevIng) => ({
+                  ...prevIng,
+                  cantidad: isNaN(numericValue) ? 0 : numericValue,
+                }));
+              }}
+              value={ing.cantidad === 0 ? '' : ing.cantidad.toString()}
+              placeholder="Cantidad"
             />
+
             <TextImputUnidadMedida
               placeholder="Un. Medida"
               onSelect={handleUmedida}

@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 
 interface ItemProps {
     title: string;
     imageUrl: Uint8Array | null;
     descripcion: string;
+    onPress: () => void;
 }
 
 const screenIcono = (uint8Array: Uint8Array): string => {
@@ -18,18 +19,18 @@ const screenIcono = (uint8Array: Uint8Array): string => {
 };
 
 // Declaración del componente funcional con tipado
-export const ItemReceta: React.FC<ItemProps> = ({ title, imageUrl, descripcion }) => {
+export const ItemReceta: React.FC<ItemProps> = ({ title, imageUrl, descripcion, onPress }) => {
     const imageSource = imageUrl
     ? { uri: screenIcono(imageUrl) }
-    : require('/home/alexis/Documentos/ReCost.app/assets/screenshot.png');
+    : require('../../../assets/screenshot.png');
     return (
-        <View style={styles.itemContainer}>
+        <TouchableOpacity onPress={onPress} style={styles.itemContainer}>
             <Image source={imageSource} style={styles.itemImage} />
             <View style={styles.textContainer}>
                 <Text style={styles.itemTitle}>{title}</Text>
                 <Text style={styles.descripcion}>{descripcion}</Text>
             </View>
-        </View>
+        </TouchableOpacity>
     );
 };
 

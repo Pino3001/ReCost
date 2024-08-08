@@ -2,6 +2,7 @@ import 'react-native-gesture-handler';
 import { StyleSheet, Pressable, View, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NavigationProp } from '@react-navigation/native';
+import Colors from '../styles/color';
 
 type ProductosProps = {
   navigation: NavigationProp<any>;
@@ -33,34 +34,26 @@ const Productos: React.FC<ProductosProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: '80%',
-  },
-  button: {
+    backgroundColor: 'white',
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 120,
-    paddingHorizontal: 30,
+  },
+  button: {
+    width: '50%',
+    height: '40%',
+    alignItems: "center",
+    justifyContent: "center",
     margin: 20,
-    borderRadius: 15,
-    elevation: 3,
-    backgroundColor: "#c56d",
+    borderWidth:2,
+    borderRadius: 40,
+    borderColor:Colors.primary,
   },
   text: {
     fontSize: 20,
     lineHeight: 21,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     letterSpacing: 0.25,
-    color: 'black',
+    color: Colors.primary,
   },
 });
 

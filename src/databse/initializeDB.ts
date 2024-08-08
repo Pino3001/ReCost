@@ -4,13 +4,12 @@ import { type SQLiteDatabase } from "expo-sqlite";
 export async function initializeDataBase(db: SQLiteDatabase) {
   try {
     await db.execAsync(
-      
       `CREATE TABLE IF NOT EXISTS UnidadMedida (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         tipoMed TEXT NOT NULL
       );
-      INSERT OR IGNORE INTO UnidadMedida (id, tipoMed) VALUES (1, 'Ml');
-      INSERT OR IGNORE INTO UnidadMedida (id, tipoMed) VALUES (2, 'Gr');
+      INSERT OR IGNORE INTO UnidadMedida (id, tipoMed) VALUES (1, 'ml');
+      INSERT OR IGNORE INTO UnidadMedida (id, tipoMed) VALUES (2, 'g');
 
       CREATE TABLE IF NOT EXISTS Producto (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -24,10 +23,12 @@ export async function initializeDataBase(db: SQLiteDatabase) {
 
       CREATE TABLE IF NOT EXISTS Ingrediente (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        idreceta INTEGER NOT NULL,
         nombre TEXT NOT NULL,
         cantidad REAL NOT NULL,
         unidadMedidaId INTEGER,
-        productoId INTEGER,
+        productoId INTEGER NOT NULL,
+        FOREIGN KEY (idreceta) REFERENCES Receta(id)
         FOREIGN KEY (unidadMedidaId) REFERENCES UnidadMedida(id),
         FOREIGN KEY (productoId) REFERENCES Producto(id)
       );
@@ -49,14 +50,6 @@ export async function initializeDataBase(db: SQLiteDatabase) {
         screenshot BLOB,
         recetaSimple INTEGER NOT NULL,
         FOREIGN KEY (tipoRecetaId) REFERENCES TipoReceta(id)
-      );
-
-      CREATE TABLE IF NOT EXISTS RecetaIngrediente (
-        recetaId INTEGER,
-        ingredienteId INTEGER,
-        PRIMARY KEY (recetaId, ingredienteId),
-        FOREIGN KEY (recetaId) REFERENCES Receta(_id),
-        FOREIGN KEY (ingredienteId) REFERENCES Ingrediente(_id)
       );`
     );
     console.log("Base de datos y tablas creadas correctamente");

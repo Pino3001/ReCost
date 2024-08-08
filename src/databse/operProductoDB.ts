@@ -1,18 +1,10 @@
 import { useSQLiteContext } from "expo-sqlite"
-
-export type ProductDatabase = {
-  id: number
-  nombre: string
-  precio: number
-  cantidadXcompra: number
-  unidadMedida: number
-  proveedor: string
-}
+import { Product } from "../app/types"
 
 export function operProductos() {
   const database = useSQLiteContext()
 
-  async function createProducto(data: Omit<ProductDatabase, "id">) {
+  async function createProducto(data: Product): Promise<Product> {
     const statement = await database.prepareAsync(
       "INSERT INTO Producto (nombre, precio, cantidadXcompra, unidadMedida, proveedor) VALUES ($nombre, $precio, $cantidadXcompra, $unidadMedida, $proveedor)"
     )
@@ -22,13 +14,14 @@ export function operProductos() {
         $nombre: data.nombre,
         $precio: data.precio,
         $cantidadXcompra: data.cantidadXcompra,
-        $unidadMedida: data.unidadMedida,
+        $unidadMedida: data.unidadMedidaID,
         $proveedor: data.proveedor
       })
 
-      const idFilaIncertada = result.lastInsertRowId
-      console.log('si ingreso el producto ' + data.nombre)
-      return { idFilaIncertada }
+      data.id = result.lastInsertRowId;
+      console.log('si ingreso el producto ' + data.id)
+      return data;
+
     } catch (error) {
       throw error
     } finally {
@@ -40,7 +33,7 @@ export function operProductos() {
     try {
       const query = "SELECT * FROM Producto WHERE nombre LIKE ?"
 
-      const response = await database.getAllAsync<ProductDatabase>(
+      const response = await database.getAllAsync<Product>(
         query,
         `%${nombre}%`
       )
@@ -50,7 +43,7 @@ export function operProductos() {
     }
   }
 
-  async function updateProducto(data: ProductDatabase) {
+  async function updateProducto(data: Product) {
     const statement = await database.prepareAsync(
       "UPDATE Producto SET nombre = $nombre, precio = $precio, cantidadXCompra = $cantidadXCompra, unidadMedida = $unidadMedida, proveedor = $proveedor WHERE id = $id"
     )
@@ -61,7 +54,7 @@ export function operProductos() {
         $nombre: data.nombre,
         $precio: data.precio,
         $cantidadXCompra: data.cantidadXcompra,
-        $unidadMedida: data.unidadMedida,
+        $unidadMedida: data.unidadMedidaID,
         $proveedor: data.proveedor
       })
     } catch (error) {
@@ -79,11 +72,11 @@ export function operProductos() {
     }
   }
 
-  async function showProductos(): Promise<ProductDatabase[]> {
+  async function showProductos(): Promise<Product[]> {
     try {
       const query = "SELECT * FROM Producto"
 
-      const response = await database.getAllAsync<ProductDatabase>(query)
+      const response = await database.getAllAsync<Product>(query)
 
       return response
     } catch (error) {
@@ -96,7 +89,7 @@ export function operProductos() {
       const query = "SELECT id, nombre FROM Producto"; // Selecciona solo los campos necesarios
   
       // Ejecuta la consulta
-      const response = await database.getAllAsync<ProductDatabase>(query);
+      const response = await database.getAllAsync<Product>(query);
   
       // Mapea la respuesta para devolver solo los campos id y nombre
       const productos = response.map(producto => ({

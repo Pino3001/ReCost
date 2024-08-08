@@ -10,7 +10,7 @@ interface unidadesDeMedida {
 }
 interface DropdownProps {
     placeholder: string;
-    onSelect: (item: string, item2: string) => void;
+    onSelect: (item: number, item2: string) => void;
 }
 
    export const TextImputUnidadMedida: React.FC<DropdownProps> = ({ placeholder, onSelect }) => {
@@ -37,7 +37,7 @@ interface DropdownProps {
     const handleSelect = (item: unidadesDeMedida) => {
         console.log('Aca entra');
         setSelectedValue(item.tipoMed);
-        onSelect(item.id.toString(), item.tipoMed);
+        onSelect(item.id, item.tipoMed);
         setModalVisible(false);
     };
     const handleClose = () => {

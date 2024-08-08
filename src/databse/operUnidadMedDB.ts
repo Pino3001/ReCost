@@ -41,6 +41,23 @@ export function operUnidadMedida() {
         }
     }
 
+    async function selectByID(id: number) {
+        try {
+          const query = "SELECT * FROM UnidadMedida WHERE id = ?";
+          const response = database.getAllSync<UnidadMedidaData>(query, [id]);
+          // Verifica si la respuesta no está vacía
+          if (response && response.length > 0) {
+            return response[0]; // Devuelve el primer resultado si existe
+          } else {
+            return null; // Retorna null si no se encuentra ningúna um
+          }
+        } catch (error) {
+          console.error('Error al seleccionar la unidad de medida:', error);
+          return null;
+        }
+      }
+    
+
     async function updateUnidadMedida(data:UnidadMedidaData) {
         const statement = await database.prepareAsync(
             "UPDATE UnidadMedida SET tipoMEd = $tipoMed WHERE id = $id"
@@ -81,5 +98,5 @@ export function operUnidadMedida() {
 
     }
 
-    return { createUnidadMedida, selectByTipo, updateUnidadMedida, removeUnidadMedida, showUnidadMedida}
+    return { createUnidadMedida, selectByTipo, updateUnidadMedida, removeUnidadMedida, showUnidadMedida, selectByID}
 }
